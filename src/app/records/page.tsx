@@ -38,10 +38,9 @@ export default function RecordsPage() {
     switch (type) {
       case "treehole":
         return "/treehole";
+      // practice 和 polish 无对应独立路由，统一回到首页
       case "practice":
-        return "/practice";
       case "polish":
-        return "/polish";
       default:
         return "/";
     }

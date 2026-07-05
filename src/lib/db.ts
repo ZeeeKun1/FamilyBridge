@@ -104,6 +104,10 @@ export async function updateBottleStatus(id: string, status: DriftBottle["status
   return db.driftBottles.update(id, { status, openedAt: status === "opened" ? Date.now() : undefined });
 }
 
+export async function updateDriftBottle(id: string, changes: Partial<DriftBottle>) {
+  return db.driftBottles.update(id, changes);
+}
+
 // ===== 时光胶囊 =====
 
 export async function saveTimeCapsule(capsule: TimeCapsule) {
@@ -116,6 +120,10 @@ export async function getAllTimeCapsules() {
 
 export async function getTimeCapsule(id: string) {
   return db.timeCapsules.get(id);
+}
+
+export async function updateTimeCapsule(id: string, updates: Partial<TimeCapsule>) {
+  return db.timeCapsules.update(id, updates);
 }
 
 // ===== 情绪气象 =====

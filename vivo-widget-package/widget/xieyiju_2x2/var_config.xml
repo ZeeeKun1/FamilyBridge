@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「写一句」2x2 变量配置
+-->
+<varConfig>
+  <!-- 引导语（每日轮换） -->
+  <var name="hintText" type="string" default="今晚想说点什么？" desc="引导用户写一条的句子" />
+  <!-- 时间戳 -->
+  <var name="currentTime" type="string" desc="当前时间" />
+  <!-- 今日已写条数 -->
+  <var name="todayCount" type="number" default="0" desc="今天已写条数" />
+</varConfig>

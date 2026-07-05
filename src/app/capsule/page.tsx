@@ -1,28 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Loading from "@/components/shared/Loading";
+
 import { useStore } from "@/lib/store";
-import { MemoryItem } from "@/lib/types";
 
 export default function CapsulePage() {
-  const router = useRouter();
   const {
-    timeCapsules,
-    loadTimeCapsules,
-    createTimeCapsule,
-    isLoading,
-    setLoading,
-    error,
-    setError,
-  } = useStore();
-
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [memories, setMemories] = useState<Omit<MemoryItem, "id">[]>([]);
-  const [newMemoryText, setNewMemoryText] = useState("");
+    userType, timeCapsules, loadTimeCapsules, createTimeCapsule, openCapsule, isLoading } = useStore();
+  const [showCreate, setShowCreate] = useState(false);
+  const [content, setContent] = useState("");
+  const [openDate, setOpenDate] = useState("");
+  const [selectedCapsule, setSelectedCapsule] = useState<typeof timeCapsules[0] | null>(null);
+  const [showOpened, setShowOpened] = useState(false);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -32,221 +21,222 @@ export default function CapsulePage() {
     }
   }, [loadTimeCapsules]);
 
-  const handleAddMemory = () => {
-    if (!newMemoryText.trim()) return;
-    
-    setMemories([
-      ...memories,
-      {
-        type: "text",
-        content: newMemoryText.trim(),
-        timestamp: Date.now(),
-        tags: [],
-      },
-    ]);
-    setNewMemoryText("");
-  };
+  const futureCapsules = timeCapsules.filter((c) => c.status === "sealed");
+  const pastCapsules = timeCapsules.filter((c) => c.status === "opened");
+  const unopenedCapsules = [...futureCapsules, ...pastCapsules].slice(0, 5);
 
-  const handleCreateCapsule = async () => {
-    if (!title.trim() || memories.length === 0) {
-      setError("请填写标题并添加至少一个记忆");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
+  const handleCreate = async () => {
+    if (!content.trim() || !openDate) return;
 
     try {
       await createTimeCapsule({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        memories: memories.map((m, index) => ({
-          ...m,
-          id: `memory-${index}-${Date.now()}`,
-        })),
+        content: content.trim(),
         createdAt: Date.now(),
-        sharedWith: [],
+        openAt: new Date(openDate).getTime(),
+        status: "sealed",
       });
-
-      setShowCreateForm(false);
-      setTitle("");
-      setDescription("");
-      setMemories([]);
+      setShowCreate(false);
+      setContent("");
+      setOpenDate("");
     } catch {
-      setError("创建失败，请重试");
-    } finally {
-      setLoading(false);
+      /* error handled by store */
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("zh-CN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const handleOpenCapsule = async (capsule: typeof timeCapsules[0]) => {
+    if (capsule.status === "sealed" && capsule.openAt > Date.now()) {
+      return;
+    }
+
+    if (capsule.status === "sealed") {
+      await openCapsule(capsule.id);
+    }
+
+    setSelectedCapsule({ ...capsule, status: capsule.status === "sealed" && capsule.openAt <= Date.now() ? "opened" : capsule.status });
+    setShowOpened(true);
   };
 
-  // 创建胶囊表单
-  if (showCreateForm) {
-    return (
-      <div className="flex flex-col h-screen">
-        <header className="flex items-center px-4 py-3 border-b border-gray-100">
-          <button onClick={() => setShowCreateForm(false)} className="text-lg mr-3">←</button>
-          <h1 className="font-semibold font-song">创建时光胶囊</h1>
-        </header>
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 1);
+  const minDateStr = minDate.toISOString().split("T")[0];
 
-        <div className="flex-1 px-4 py-4 overflow-y-auto">
-          <div className="space-y-4">
-            {/* 标题 */}
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">胶囊名称</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="给这个胶囊起个名字..."
-                className="w-full bg-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none"
-              />
-            </div>
-
-            {/* 描述 */}
-            <div>
-              <label className="text-xs text-gray-400 mb-1 block">描述（可选）</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="写一段描述..."
-                className="w-full bg-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none resize-none min-h-[60px]"
-                rows={2}
-              />
-            </div>
-
-            {/* 添加记忆 */}
-            <div>
-              <label className="text-xs text-gray-400 mb-2 block">添加记忆</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={newMemoryText}
-                  onChange={(e) => setNewMemoryText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddMemory()}
-                  placeholder="记录一个美好瞬间..."
-                  className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none"
-                />
-                <button
-                  onClick={handleAddMemory}
-                  disabled={!newMemoryText.trim()}
-                  className="w-9 h-9 rounded-full bg-tianqing text-white flex items-center justify-center disabled:opacity-40"
-                >
-                  +
-                </button>
-              </div>
-
-              {/* 已添加的记忆 */}
-              {memories.length > 0 && (
-                <div className="space-y-2">
-                  {memories.map((mem, index) => (
-                    <div
-                      key={index}
-                      className="bg-yuebai rounded-xl p-3 flex items-start gap-2"
-                    >
-                      <span className="text-xs text-gray-400 mt-0.5">📝</span>
-                      <p className="text-sm text-gray-700 flex-1">{mem.content}</p>
-                      <button
-                        onClick={() => setMemories(memories.filter((_, i) => i !== index))}
-                        className="text-xs text-gray-400 hover:text-red-400"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {error && (
-              <p className="text-xs text-red-400 text-center">{error}</p>
-            )}
-
-            <button
-              onClick={handleCreateCapsule}
-              disabled={isLoading || !title.trim() || memories.length === 0}
-              className="w-full bg-tianqing text-white rounded-xl py-3 text-sm font-medium disabled:opacity-40"
-            >
-              {isLoading ? "创建中..." : "封存胶囊"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 主页面
   return (
-    <div className="flex flex-col h-screen pb-16">
-      <header className="flex items-center px-4 py-3 border-b border-gray-100">
-        <button onClick={() => router.back()} className="text-lg mr-3">←</button>
-        <h1 className="font-semibold font-song">时光胶囊</h1>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="text-xs text-tianqing bg-tianqing/10 rounded-lg px-2 py-1"
-        >
-          + 新建
-        </button>
+    <div className="flex flex-col bg-gradient-to-b from-yuebai to-mibai">
+      <header className="flex items-center px-4 py-3 bg-mibai/90 backdrop-blur-md border-b border-tianqing/10">
+        <div className="flex-1 text-center">
+          <h1 className="text-base font-semibold text-gray-700">时光胶囊</h1>
+          <p className="text-[10px] text-gray-400 mt-0.5 tracking-wide">封存此刻，留给未来</p>
+        </div>
       </header>
 
-      <div className="flex-1 px-4 py-4 overflow-y-auto">
-        {isLoading && <Loading text="加载中..." />}
-
-        {!isLoading && timeCapsules.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">⏳</span>
-            </div>
-            <p className="text-gray-500 text-sm mb-2">还没有时光胶囊</p>
-            <p className="text-gray-400 text-xs">记录生活中的美好瞬间</p>
+      {showOpened && selectedCapsule ? (
+        <div className="flex-1 px-5 py-6 flex flex-col items-center">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center mb-5 shadow-md animate-glow">
+            <span className="text-4xl leading-none">⏳</span>
           </div>
-        )}
+          <h2 className="text-xl font-semibold text-gray-700 mb-1">
+            {selectedCapsule.status === "opened" ? "时光胶囊已开启" : "时光胶囊"}
+          </h2>
+          <p className="text-xs text-gray-400 mb-7">
+            {selectedCapsule.status === "opened"
+              ? `${new Date(selectedCapsule.createdAt).toLocaleDateString("zh-CN")} 写下`
+              : `${new Date(selectedCapsule.openAt).toLocaleDateString("zh-CN")} 可开启`}
+          </p>
 
-        {timeCapsules.length > 0 && (
-          <div className="space-y-4">
-            {timeCapsules.map((capsule) => (
-              <div
-                key={capsule.id}
-                className="bg-white rounded-2xl p-4 border border-gray-100 hover:shadow-md transition-all"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-800 font-song">{capsule.title}</h3>
-                  <span className="text-xs text-gray-400">
-                    {formatDate(capsule.createdAt)}
-                  </span>
-                </div>
-                
-                {capsule.description && (
-                  <p className="text-xs text-gray-500 mb-3">{capsule.description}</p>
-                )}
+          <div className="w-full bg-white rounded-3xl p-6 mb-5 border border-gray-100 shadow-sm">
+            <p className="text-sm text-gray-600 leading-7 whitespace-pre-wrap">{selectedCapsule.content}</p>
+          </div>
 
-                <div className="space-y-2">
-                  {capsule.memories.slice(0, 3).map((mem) => (
-                    <div key={mem.id} className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-400">•</span>
-                      <span className="text-gray-600 truncate flex-1">
-                        {mem.content.length > 30 ? mem.content.slice(0, 30) + "..." : mem.content}
-                      </span>
-                    </div>
-                  ))}
-                  {capsule.memories.length > 3 && (
-                    <p className="text-xs text-gray-400">
-                      还有 {capsule.memories.length - 3} 个记忆...
-                    </p>
-                  )}
-                </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowOpened(false);
+              setSelectedCapsule(null);
+            }}
+            className="w-full bg-gradient-to-r from-tianqing to-oupink text-white rounded-2xl py-3 text-sm font-medium active:scale-[0.98] transition-transform shadow-md"
+          >
+            我知道了
+          </button>
+        </div>
+      ) : showCreate ? (
+        <div className="flex-1 px-5 py-6">
+          <div className="flex items-center gap-3 mb-5">
+            <button
+              type="button"
+              onClick={() => setShowCreate(false)}
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-gray-500 active:scale-95 transition-transform shadow-sm"
+            >
+              ←
+            </button>
+            <h2 className="text-base font-semibold text-gray-700">写下胶囊</h2>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm mb-5">
+            <p className="text-xs text-gray-400 mb-3">写给未来的自己或家人</p>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="此刻想说什么..."
+              rows={6}
+              className="w-full text-sm text-gray-700 outline-none resize-none leading-7"
+            />
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm mb-6">
+            <p className="text-xs text-gray-400 mb-3">什么时候开启？</p>
+            <input
+              type="date"
+              value={openDate}
+              onChange={(e) => setOpenDate(e.target.value)}
+              min={minDateStr}
+              className="w-full text-sm text-gray-700 outline-none"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCreate}
+            disabled={!content.trim() || !openDate || isLoading}
+            className="w-full bg-gradient-to-r from-tianqing to-oupink text-white rounded-2xl py-3 text-sm font-medium disabled:opacity-40 active:scale-[0.98] transition-transform shadow-md"
+          >
+            {isLoading ? "封存中..." : "封存胶囊"}
+          </button>
+        </div>
+      ) : (
+        <div className="flex-1 px-5 py-5 overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="w-full bg-gradient-to-r from-tianqing to-oupink rounded-3xl p-5 text-white shadow-md mb-6 active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-left">
+                <h2 className="text-base font-semibold mb-1">封存一段时光</h2>
+                <p className="text-sm opacity-80">写给未来的自己或家人</p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <span className="text-4xl leading-none">⏳</span>
+            </div>
+          </button>
+
+          {unopenedCapsules.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-yuebai flex items-center justify-center mb-4 shadow-sm">
+                <span className="text-3xl">🌱</span>
+              </div>
+              <p className="text-sm text-gray-500 mb-1">还没有时光胶囊</p>
+              <p className="text-xs text-gray-400 max-w-[220px] leading-6">
+                封存此刻的想法或话语<br />在未来的某一天重新打开
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h3 className="text-xs text-gray-400 font-medium tracking-wider">我的胶囊</h3>
+
+              {unopenedCapsules.map((capsule) => {
+                const isOpenable = capsule.status === "sealed" && capsule.openAt <= Date.now();
+                const isOpened = capsule.status === "opened";
+
+                return (
+                  <button
+                    type="button"
+                    key={capsule.id}
+                    onClick={() => handleOpenCapsule(capsule)}
+                    className="w-full bg-white rounded-3xl p-4 border border-gray-100 shadow-sm text-left active:scale-[0.99] transition-transform"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                        isOpened
+                          ? "bg-amber-50"
+                          : isOpenable
+                            ? "bg-gradient-to-br from-amber-100 to-orange-100"
+                            : "bg-yuebai"
+                      }`}>
+                        <span className="text-2xl leading-none">
+                          {isOpened ? "✨" : isOpenable ? "⏳" : "🔒"}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h4 className="text-sm font-medium text-gray-700 truncate">
+                            {capsule.content.slice(0, 20)}{capsule.content.length > 20 ? "..." : ""}
+                          </h4>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${
+                            isOpened
+                              ? "bg-amber-100 text-amber-600"
+                              : isOpenable
+                                ? "bg-green-100 text-green-600"
+                                : "bg-gray-100 text-gray-500"
+                          }`}>
+                            {isOpened ? "已开启" : isOpenable ? "可开启" : "未到期"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          {isOpened
+                            ? `${new Date(capsule.openAt).toLocaleDateString("zh-CN")} 开启`
+                            : `将于 ${new Date(capsule.openAt).toLocaleDateString("zh-CN")} 解锁`}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {userType === "parent" && (
+            <div className="mt-8 bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">💡</span>
+                <h3 className="font-medium text-gray-700 text-sm">使用建议</h3>
+              </div>
+              <p className="text-xs text-gray-400 leading-6">
+                和孩子一起写下对彼此的期望和祝福，约定一个特别的日期一起开启，增进彼此的理解。
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

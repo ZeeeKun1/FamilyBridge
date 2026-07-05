@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「安语」VIVO 原子组件 - 资源包描述文件
+  三个组件：
+  1. 心湖 2x2 (xinhui_2x2)
+  2. 心意 4x2 (xinyi_4x2)
+  3. 写一句 2x2 (xieyiju_2x2)
+-->
+<theme>
+  <id>202406010001</id>
+  <edition>1</edition>
+  <titles>
+    <title locale="zh_CN"><![CDATA[安语·家庭情感]]></title>
+  </titles>
+  <authors>
+    <author locale="zh_CN"><![CDATA[安语团队]]></author>
+  </authors>
+  <designers>
+    <designer locale="zh_CN"><![CDATA[安语设计]]></designer>
+  </designers>
+  <descriptions>
+    <description locale="zh_CN"><![CDATA[把说不出口的话，温柔地传出去]]></description>
+  </descriptions>
+  <extras>
+    <!-- 引擎版本号，按VIVO规范对应 -->
+    <extra_engineVersion>1</extra_engineVersion>
+    <!--
+      组件列表：
+      - xinhui_2x2: 心湖 2x2 家庭情绪
+      - xinyi_4x2: 心意 4x2 消息流
+      - xieyiju_2x2: 写一句 2x2 快速入口
+    -->
+    <extra_widgetExtra>[{"name":"xinhui_2x2","id":"anyu_001","type":"emotion","subtype":"family","supportdark":true},{"name":"xinyi_4x2","id":"anyu_002","type":"message","subtype":"inbox","supportdark":true},{"name":"xieyiju_2x2","id":"anyu_003","type":"action","subtype":"compose","supportdark":true}]</extra_widgetExtra>
+  </extras>
+</theme>

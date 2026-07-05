@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「心湖」2x2 变量配置文件
+  供 VIVO 效果引擎使用
+-->
+<varConfig>
+  <!-- 家庭整体状态 -->
+  <var name="familyStatus" type="string" default="静好" desc="家庭状态文字" />
+  <!-- 家庭情绪描述 -->
+  <var name="familyMood" type="string" default="三人皆安，各自温柔" desc="情绪描述" />
+  <!-- 情绪类型（决定显示哪组图形） -->
+  <var name="emotionType" type="string" default="calm" desc="calm/warm/worry" />
+
+  <!-- 日期变量 -->
+  <var name="date" type="string" desc="当前日期" />
+  <var name="time" type="string" desc="当前时间" />
+
+  <!-- 家人状态列表（仅显示3个主要成员） -->
+  <var name="member1" type="string" default="妈妈" desc="家人1称呼" />
+  <var name="member2" type="string" default="爸爸" desc="家人2称呼" />
+  <var name="member3" type="string" default="我" desc="家人3称呼" />
+</varConfig>

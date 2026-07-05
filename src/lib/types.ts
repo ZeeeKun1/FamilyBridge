@@ -137,6 +137,32 @@ export interface ParentProfile {
   updatedAt: number;
 }
 
+// ===== 账号 & 家庭 =====
+// 登录态：一个 familyId 下若干成员；当前登录用户绑定其中一个成员。
+// 用户类型不再可以随意切换，由登录账号决定。
+
+export type FamilyRole = "child" | "parent";
+
+export interface FamilyMember {
+  id: string;          // 成员唯一 id
+  familyId: string;    // 同一 familyId 下视为同一家庭
+  role: FamilyRole;    // child / parent
+  displayName: string; // 显示名
+  relation: string;    // 关系（孩子/妈妈/爸爸/...）
+  avatarTone: string;  // 头像底色 token（"oupink" / "tianqing" / ...）
+}
+
+export interface AuthAccount {
+  username: string;    // 测试账号用户名
+  password: string;    // 测试账号密码（仅 mock）
+  memberId: string;    // 绑定的家庭成员 id
+}
+
+export interface Session {
+  memberId: string;
+  loggedAt: number;
+}
+
 // ===== AI 请求 =====
 
 export type AICapability =
@@ -168,6 +194,16 @@ export interface ImageryCard {
   animation?: string;
 }
 
+// 寄送模式：
+// - imagery：从意象卡寄送（默认）
+// - daily：每日心情（3 秒选一个心情图标）
+// - greeting：一键问候（高频短句）
+// - polish：用户先写原话，再由 AI 润色（P6 显性化）
+export type DriftBottleMode = "imagery" | "daily" | "greeting" | "polish";
+
+// 收件人心动回执（P5）："heart" 表示心动一下
+export type DriftBottleReaction = "heart";
+
 export interface DriftBottle {
   id: string;
   senderId: string;
@@ -175,10 +211,16 @@ export interface DriftBottle {
   imageryId: string;
   imageryName: string;
   customMessage?: string;
+  // 用户最初写的原话（仅 polish 模式存）——用于发件人/收件人查看 AI 改写前后对比
+  originalText?: string;
+  mode?: DriftBottleMode;
   poem: string;
   status: "sent" | "received" | "opened";
   sentAt: number;
   openedAt?: number;
+  // 收件人对这封心意的反馈（P5）
+  reaction?: DriftBottleReaction;
+  reactedAt?: number;
 }
 
 // ===== 时光胶囊 =====
@@ -194,12 +236,10 @@ export interface MemoryItem {
 
 export interface TimeCapsule {
   id: string;
-  title: string;
-  description?: string;
-  memories: MemoryItem[];
+  content: string;
   createdAt: number;
-  scheduledDate?: number;
-  sharedWith: string[];
+  openAt: number;
+  status: "sealed" | "opened";
 }
 
 // ===== 翻译�?=====
@@ -223,4 +263,32 @@ export interface EmotionWeather {
   intensity: number;
   trend: "up" | "down" | "stable";
   timestamp: number;
+}
+
+// ===== 家庭时间轴（计算派生，不持久化） =====
+
+export type TimelineGroup = "today" | "thisWeek" | "thisMonth" | "earlier";
+
+export interface TimelineEntry {
+  bottle: DriftBottle;
+  group: TimelineGroup;
+  dateLabel: string;
+  timeLabel: string;
+  isSpecial: boolean;
+  specialLabel?: string;
+  seasonTag?: string;
+  direction: "sent" | "received";
+  senderName: string;
+  receiverName: string;
+  isUnread: boolean;
+}
+
+export interface TimelineStats {
+  totalMessages: number;
+  firstMessageDate: number | null;
+  daysSinceFirst: number;
+  sentCount: number;
+  receivedCount: number;
+  unreadCount: number;
+  heartCount: number;
 }

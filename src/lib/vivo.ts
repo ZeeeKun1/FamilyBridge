@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { SYSTEM_PROMPTS, MODEL_MAP } from "./prompts";
+import { MODEL_MAP } from "./prompts";
 import { AICapability, MessageRole } from "./types";
 
 const client = new OpenAI({
@@ -17,19 +17,14 @@ function buildParams(
   stream: boolean
 ) {
   const model = MODEL_MAP[capability] || "Doubao-Seed-2.0-mini";
-  const systemPrompt = SYSTEM_PROMPTS[capability] || "";
 
-  const fullMessages = [
-    { role: "system" as const, content: systemPrompt },
-    ...messages.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-  ];
-
+  // systemPrompt 已由 route.ts 注入 messages 中，此处不再重复拼接
   const params: Record<string, unknown> = {
     model,
-    messages: fullMessages,
+    messages: messages.map((m) => ({
+      role: m.role as "user" | "assistant" | "system",
+      content: m.content,
+    })),
     temperature: capability === "persona" ? 0.3 : 0.7,
     max_tokens: 4096,
     stream,

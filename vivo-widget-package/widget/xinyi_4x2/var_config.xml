@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「心意」4x2 变量配置
+-->
+<varConfig>
+  <!-- 发送者名字 -->
+  <var name="senderName" type="string" default="妈妈" desc="发信人称呼" />
+  <!-- 发送者首字（用于头像） -->
+  <var name="senderInitial" type="string" default="妈" desc="头像首字" />
+  <!-- 发送时间 -->
+  <var name="sendTime" type="string" default="刚刚" desc="发送时间" />
+  <!-- 信件内容 -->
+  <var name="letterText" type="string" default="今天看到一束很好看的花" desc="信件内容" />
+  <!-- 是否有未读 -->
+  <var name="hasUnread" type="boolean" default="true" desc="是否有未读消息" />
+  <!-- 情绪类型 -->
+  <var name="emotionType" type="string" default="warm" desc="warm/calm/worry" />
+</varConfig>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import Icon, { IconNames } from "@/components/shared/Icon";
 
 interface VoiceInputProps {
   onResult?: (text: string) => void;
@@ -45,6 +46,14 @@ export default function VoiceInput({ onResult, onVoiceComplete, placeholder = "�
   const [listeningText, setListeningText] = useState("");
   const recognitionRef = useRef<SpeechRecognitionType | null>(null);
 
+  // #9: 用 ref 稳定 callback 引用，避免 recognition 重复初始化
+  const onVoiceCompleteRef = useRef(onVoiceComplete);
+  const onResultRef = useRef(onResult);
+  onVoiceCompleteRef.current = onVoiceComplete;
+  onResultRef.current = onResult;
+  const isListeningRef = useRef(isListening);
+  isListeningRef.current = isListening;
+
   useEffect(() => {
     const win = window as unknown as { SpeechRecognition?: { new (): SpeechRecognitionType }; webkitSpeechRecognition?: { new (): SpeechRecognitionType } };
     const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
@@ -63,10 +72,10 @@ export default function VoiceInput({ onResult, onVoiceComplete, placeholder = "�
         setListeningText(transcript);
         if (event.results[0] && event.results[0][0] && event.results[0][0].isFinal) {
           setIsListening(false);
-          if (onVoiceComplete) {
-            onVoiceComplete(transcript);
-          } else if (onResult) {
-            onResult(transcript);
+          if (onVoiceCompleteRef.current) {
+            onVoiceCompleteRef.current(transcript);
+          } else if (onResultRef.current) {
+            onResultRef.current(transcript);
           }
           setListeningText("");
         }
@@ -78,7 +87,7 @@ export default function VoiceInput({ onResult, onVoiceComplete, placeholder = "�
       };
 
       recognition.onend = () => {
-        if (recognitionRef.current && isListening) {
+        if (recognitionRef.current && isListeningRef.current) {
           recognitionRef.current.start();
         }
       };
@@ -87,7 +96,7 @@ export default function VoiceInput({ onResult, onVoiceComplete, placeholder = "�
         recognition.abort();
       };
     }
-  }, [onResult, onVoiceComplete, isListening]);
+  }, []);
 
   const startListening = useCallback(() => {
     if (!isSupported || isListening) return;
@@ -112,33 +121,39 @@ export default function VoiceInput({ onResult, onVoiceComplete, placeholder = "�
   const displayText = isListening ? listeningText : (value || "");
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative group ${className}`}>
       <textarea
         value={displayText}
         onChange={(e) => onChange?.(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-yuebai rounded-2xl px-4 py-3 text-sm outline-none border border-tianqing/10 focus:border-tianqing/30 transition-colors resize-none"
+        className="w-full bg-white/70 backdrop-blur-md rounded-3xl px-5 py-4 text-sm text-gray-700 outline-none border border-white/60 focus:border-tianqing/40 focus:bg-white transition-all resize-none shadow-soft hover:shadow-medium"
         rows={4}
         readOnly={isListening}
       />
-      <button
-        onClick={toggleListening}
-        disabled={!isSupported}
-        className={`absolute right-3 bottom-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-          isListening
-            ? "bg-red-100 text-red-500 animate-pulse shadow-lg"
-            : "bg-tianqing/10 text-tianqing hover:bg-tianqing/20"
-        } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
-        title={isSupported ? (isListening ? "停止录音" : "语音输入") : "浏览器不支持语音输入"}
-      >
-        <span className="text-lg">{isListening ? "⏹️" : "🎤"}</span>
-      </button>
-      {isListening && (
-        <div className="absolute left-3 bottom-3 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-          <span className="text-xs text-gray-400">正在听...</span>
-        </div>
-      )}
+      <div className="absolute right-3 bottom-3 flex items-center gap-2">
+        {isListening && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-100 mr-1 animate-pulse">
+            <div className="flex gap-1 items-center">
+              <span className="w-1 h-3 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
+              <span className="w-1 h-4 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
+              <span className="w-1 h-2 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+            </div>
+            <span className="text-[10px] text-red-500 font-medium tracking-wide">聆听中...</span>
+          </div>
+        )}
+        <button
+          onClick={toggleListening}
+          disabled={!isSupported}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 ${
+            isListening
+              ? "bg-red-500 text-white shadow-lg shadow-red-500/20"
+              : "bg-white text-tianqing border border-tianqing/10 shadow-sm hover:shadow-md hover:bg-tianqing/5"
+          } ${!isSupported ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
+          title={isSupported ? (isListening ? "停止录音" : "语音输入") : "浏览器不支持语音输入"}
+        >
+          <Icon name={isListening ? IconNames.CLOSE : IconNames.VOICE} size={20} />
+        </button>
+      </div>
     </div>
   );
 }

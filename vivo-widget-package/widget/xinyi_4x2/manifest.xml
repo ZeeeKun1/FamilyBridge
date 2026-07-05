@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「心意」4x2 桌面上的家书
+  尺寸：924 x 432 px
+  类型：message
+  支持深色模式：是
+-->
+<Widget
+  version="1"
+  frameRate="30"
+  screenWidth="924"
+  screenHeight="432"
+  id="anyu_002_xinyi"
+  useVariableUpdater="DateTime"
+>
+  <!-- 背景：横向信纸渐变 -->
+  <Image
+    x="0"
+    y="0"
+    width="#screen_width"
+    height="#screen_height"
+    src="bg_letter.png"
+    alignV="top"
+  />
+
+  <!-- 信纸横线纹理（半透明） -->
+  <Group>
+    <Repeater count="12" direction="y" spacing="38" startY="30">
+      <Line
+        x1="0" y1="0" x2="924" y2="0"
+        color="#3B4A5C"
+        strokeWidth="1"
+        alpha="15"
+      />
+    </Repeater>
+  </Group>
+
+  <!-- 右侧小信封图标 -->
+  <Group
+    x="#screen_width - 80"
+    y="50"
+    alignH="center"
+    alignV="center"
+  >
+    <Circle x="0" y="0" radius="36" color="#FFFFFF" alpha="80" />
+    <Path
+      d="M-15 -5 L0 5 L15 -5"
+      color="#7A93A4"
+      strokeWidth="1.5"
+    />
+    <Rect
+      x="-15" y="-10" width="30" height="20" rx="1.5"
+      borderColor="#7A93A4"
+      borderWidth="1.5"
+      fill="none"
+    />
+  </Group>
+
+  <!-- 顶部发信人信息 -->
+  <Group x="40" y="50" alignV="center">
+    <Circle
+      x="0" y="0" radius="22"
+      color="#FFFFFF"
+      alpha="160"
+    />
+    <Text
+      x="0" y="0"
+      align="center" alignV="center"
+      color="#5A6B7C" size="14"
+      text="#senderInitial"
+    />
+    <Text
+      x="34" y="0"
+      align="left" alignV="center"
+      color="#3B4A5C" size="22"
+      text="#senderName"
+    />
+    <Text
+      x="34" y="0"
+      align="right" alignV="center"
+      color="#8A9AAB" size="16"
+      text="#sendTime"
+    />
+  </Group>
+
+  <!-- 未读小圆点 -->
+  <Circle
+    x="0" y="0"
+    cx="0" cy="0"
+    category="HasUnread"
+    radius="6"
+    color="#E6A0A0"
+    alpha="255"
+  />
+
+  <!-- 信件内容 -->
+  <Text
+    x="40"
+    y="#screen_height/2 + 10"
+    align="left" alignV="center"
+    color="#3B4A5C" size="30"
+    text="#letterText"
+    maxWidth="#screen_width - 200"
+    alpha="220"
+  />
+
+  <!-- 底部操作提示 -->
+  <Text
+    x="40"
+    y="#screen_height - 50"
+    align="left" alignV="center"
+    color="#8A9AAB" size="14"
+    text="轻触查看"
+  />
+
+  <!-- 右下角分页指示 -->
+  <Group
+    x="#screen_width - 50"
+    y="#screen_height - 50"
+    alignH="right" alignV="center"
+  >
+    <Circle x="-30" y="0" radius="3" color="#A3B8C6" alpha="200" />
+    <Circle x="-15" y="0" radius="3" color="#A3B8C6" alpha="150" />
+    <Circle x="0" y="0" radius="3" color="#A3B8C6" alpha="100" />
+  </Group>
+</Widget>

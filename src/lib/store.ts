@@ -8,6 +8,9 @@ import {
   DriftBottle,
   TimeCapsule,
   EmotionWeather,
+  FamilyMember,
+  TimelineEntry,
+  TimelineStats,
 } from "./types";
 import {
   getUserProfile,
@@ -21,20 +24,38 @@ import {
   getDriftBottlesByReceiver,
   getDriftBottlesBySender,
   updateBottleStatus,
+  updateDriftBottle,
   saveTimeCapsule,
   getAllTimeCapsules,
+  updateTimeCapsule,
   saveEmotionWeather,
   getRecentEmotionWeathers,
   initDefaultData,
 } from "./db";
 import { UserType, designConfigs } from "./designConfig";
+import {
+  getSession,
+  getMember,
+  getOtherMember,
+  login as authLogin,
+  logout as authLogout,
+} from "./auth";
+import { seedDemoDataIfNeeded } from "./seed";
+import { computeTimelineEntries, computeTimelineStats } from "./timeline";
 
 interface AppState {
   userProfile: UserProfile | null;
   loadUserProfile: () => Promise<void>;
 
-  userType: UserType;
-  setUserType: (type: UserType) => void;
+  // 会话与家庭
+  currentMember: FamilyMember | null;
+  partnerMember: FamilyMember | null;   // 同家庭的另一位成员（接收人）
+  hydrateSession: () => void;            // 启动时从 localStorage 恢复
+  login: (username: string, password: string) => boolean;
+  logout: () => void;
+
+  userType: UserType;                    // 由 currentMember.role 派生，保留兼容
+  setUserType: (type: UserType) => void; // 仅供调试用
 
   parentProfiles: ParentProfile[];
   loadParentProfiles: () => Promise<void>;
@@ -57,11 +78,17 @@ interface AppState {
   loadDriftBottles: () => Promise<void>;
   sendDriftBottle: (bottle: Omit<DriftBottle, "id">) => Promise<void>;
   openDriftBottle: (id: string) => Promise<void>;
+  reactToDriftBottle: (id: string, reaction: "heart") => Promise<void>;
+
+  // 家庭时间轴（派生方法，不持久化）
+  getTimelineEntries: () => TimelineEntry[];
+  getTimelineStats: () => TimelineStats;
 
   // 时光胶囊
   timeCapsules: TimeCapsule[];
   loadTimeCapsules: () => Promise<void>;
   createTimeCapsule: (capsule: Omit<TimeCapsule, "id">) => Promise<void>;
+  openCapsule: (id: string) => Promise<void>;
 
   // 情绪气象
   emotionWeather: EmotionWeather | null;
@@ -91,6 +118,46 @@ export const useStore = create<AppState>((set, get) => ({
     if (profile?.isParent) {
       set({ userType: "parent" });
     }
+  },
+
+  // ====== 会话 ======
+  currentMember: null,
+  partnerMember: null,
+  hydrateSession: () => {
+    const session = getSession();
+    if (!session) return;
+    const me = getMember(session.memberId) || null;
+    const partner = me ? getOtherMember(me.id) || null : null;
+    set({
+      currentMember: me,
+      partnerMember: partner,
+      userType: me?.role === "parent" ? "parent" : "child",
+      designConfig: designConfigs[me?.role === "parent" ? "parent" : "child"],
+    });
+    if (me) {
+      // 异步种子，不阻塞 UI
+      seedDemoDataIfNeeded(me.id).catch(() => {});
+    }
+  },
+  login: (username, password) => {
+    const session = authLogin(username, password);
+    if (!session) return false;
+    const me = getMember(session.memberId) || null;
+    const partner = me ? getOtherMember(me.id) || null : null;
+    set({
+      currentMember: me,
+      partnerMember: partner,
+      userType: me?.role === "parent" ? "parent" : "child",
+      designConfig: designConfigs[me?.role === "parent" ? "parent" : "child"],
+    });
+    if (me) {
+      seedDemoDataIfNeeded(me.id).catch(() => {});
+    }
+    return true;
+  },
+  logout: () => {
+    authLogout();
+    set({ currentMember: null, partnerMember: null });
   },
 
   userType: "child",
@@ -165,18 +232,52 @@ export const useStore = create<AppState>((set, get) => ({
   // 漂流瓶
   driftBottles: [],
   loadDriftBottles: async () => {
-    const received = await getDriftBottlesByReceiver("self");
-    const sent = await getDriftBottlesBySender("self");
+    const me = get().currentMember;
+    // 未登录时，仍按 self 兼容历史数据；登录后按当前 memberId 取
+    const myId = me?.id || "self";
+    const received = await getDriftBottlesByReceiver(myId);
+    const sent = await getDriftBottlesBySender(myId);
     set({ driftBottles: [...received, ...sent] });
   },
   sendDriftBottle: async (bottle) => {
-    const newBottle: DriftBottle = { ...bottle, id: generateId() };
+    const me = get().currentMember;
+    const partner = get().partnerMember;
+    // senderId 用当前用户 id；若 bottle.receiverId 仍是 "self"（旧调用方），自动替换为家人 id
+    const senderId = me?.id || bottle.senderId || "self";
+    const receiverId =
+      bottle.receiverId && bottle.receiverId !== "self"
+        ? bottle.receiverId
+        : partner?.id || bottle.receiverId || "self";
+    const newBottle: DriftBottle = {
+      ...bottle,
+      id: generateId(),
+      senderId,
+      receiverId,
+    };
     await saveDriftBottle(newBottle);
     await get().loadDriftBottles();
   },
   openDriftBottle: async (id) => {
     await updateBottleStatus(id, "opened");
     await get().loadDriftBottles();
+  },
+  reactToDriftBottle: async (id, reaction) => {
+    await updateDriftBottle(id, { reaction, reactedAt: Date.now() });
+    await get().loadDriftBottles();
+  },
+
+  // 家庭时间轴（派生方法）
+  getTimelineEntries: () => {
+    const { driftBottles, currentMember, partnerMember } = get();
+    return computeTimelineEntries(
+      driftBottles,
+      currentMember?.id || "",
+      partnerMember
+    );
+  },
+  getTimelineStats: () => {
+    const { driftBottles } = get();
+    return computeTimelineStats(driftBottles);
   },
 
   // 时光胶囊
@@ -188,6 +289,10 @@ export const useStore = create<AppState>((set, get) => ({
   createTimeCapsule: async (capsule) => {
     const newCapsule: TimeCapsule = { ...capsule, id: generateId() };
     await saveTimeCapsule(newCapsule);
+    await get().loadTimeCapsules();
+  },
+  openCapsule: async (id) => {
+    await updateTimeCapsule(id, { status: "opened" });
     await get().loadTimeCapsules();
   },
 

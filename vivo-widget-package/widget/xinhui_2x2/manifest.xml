@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「心湖」2x2 家庭情绪晴雨表
+  尺寸：432 x 432 px
+  类型：emotion
+  支持深色模式：是
+-->
+<Widget
+  version="1"
+  frameRate="30"
+  screenWidth="432"
+  screenHeight="432"
+  id="anyu_001_xinhui"
+  useVariableUpdater="DateTime"
+>
+  <!-- 背景层：天青-藕粉径向渐变 -->
+  <Image
+    x="0"
+    y="0"
+    width="#screen_width"
+    height="#screen_height"
+    src="bg_gradient.png"
+    alignV="top"
+  />
+
+  <!-- 远山层叠装饰（半透明） -->
+  <Image
+    x="0"
+    y="#screen_height * 0.65"
+    width="#screen_width"
+    height="#screen_height * 0.35"
+    src="mountains_far.png"
+    alpha="80"
+  />
+
+  <!-- 湖面波纹组 - 静态层 -->
+  <Group
+    x="#screen_width/2"
+    y="#screen_height * 0.78"
+    alignH="center"
+    alignV="center"
+  >
+    <Circle x="0" y="0" radius="60" borderColor="#FFFFFF" borderWidth="1.5" alpha="60" />
+    <Circle x="0" y="0" radius="44" borderColor="#FFFFFF" borderWidth="1.5" alpha="50" />
+    <Circle x="0" y="0" radius="28" borderColor="#FFFFFF" borderWidth="1.5" alpha="40" />
+  </Group>
+
+  <!-- 主情绪图形（根据 familyEmotion 状态切换） -->
+  <!-- 平静状态：圆+波纹 -->
+  <Group
+    x="#screen_width/2"
+    y="#screen_height * 0.32"
+    alignH="center"
+    alignV="center"
+    category="EmotionCalm"
+  >
+    <Circle x="0" y="0" radius="26" borderColor="#FFFFFF" borderWidth="1.5" alpha="180" />
+    <Path
+      d="M-14 4 Q-7 0 0 4 T14 4"
+      color="#FFFFFF"
+      strokeWidth="1.8"
+      alpha="200"
+    />
+    <Circle x="0" y="-6" radius="2" color="#FFFFFF" alpha="180" />
+  </Group>
+
+  <!-- 温暖状态：圆+多道波 -->
+  <Group
+    x="#screen_width/2"
+    y="#screen_height * 0.32"
+    alignH="center"
+    alignV="center"
+    category="EmotionWarm"
+  >
+    <Circle x="0" y="0" radius="26" borderColor="#FFFFFF" borderWidth="1.5" alpha="200" />
+    <Path
+      d="M-14 4 Q-7 -2 0 4 T14 4"
+      color="#FFFFFF"
+      strokeWidth="1.8"
+      alpha="220"
+    />
+    <Circle cx="-6" cy="-4" r="1.5" color="#FFFFFF" alpha="200" />
+    <Circle cx="6" cy="-4" r="1.5" color="#FFFFFF" alpha="200" />
+  </Group>
+
+  <!-- 心忧状态：圆+点 -->
+  <Group
+    x="#screen_width/2"
+    y="#screen_height * 0.32"
+    alignH="center"
+    alignV="center"
+    category="EmotionWorry"
+  >
+    <Circle x="0" y="0" radius="26" borderColor="#FFFFFF" borderWidth="1.5" alpha="180" />
+    <Path
+      d="M-14 4 Q-7 -2 0 4 T14 4"
+      color="#FFFFFF"
+      strokeWidth="1.8"
+      alpha="180"
+    />
+    <Circle x="0" cy="8" r="1.5" color="#FFFFFF" />
+  </Group>
+
+  <!-- 副标题文字：今日·家 -->
+  <Text
+    x="#screen_width/2"
+    y="#screen_height * 0.55"
+    align="center"
+    alignV="center"
+    color="#FFFFFF"
+    size="12"
+    alpha="180"
+    text="今 日 · 家"
+  />
+
+  <!-- 主标题文字：状态名（动态） -->
+  <Text
+    x="#screen_width/2"
+    y="#screen_height * 0.62"
+    align="center"
+    alignV="center"
+    color="#FFFFFF"
+    size="32"
+    text="#familyStatus"
+    alpha="240"
+  />
+
+  <!-- 描述文字 -->
+  <Text
+    x="#screen_width/2"
+    y="#screen_height * 0.72"
+    align="center"
+    alignV="center"
+    color="#FFFFFF"
+    size="12"
+    text="#familyMood"
+    alpha="180"
+    maxWidth="280"
+  />
+
+  <!-- 时间更新 -->
+  <Text
+    x="#screen_width/2"
+    y="#screen_height - 16"
+    align="center"
+    alignV="bottom"
+    color="#FFFFFF"
+    size="9"
+    alpha="120"
+    format="%m月%d日"
+  />
+
+  <!-- 电量不足提示 -->
+  <Text
+    x="#screen_width/2"
+    y="#screen_height - 6"
+    category="BatteryLow"
+    align="center"
+    alignV="bottom"
+    color="#FFFFFF"
+    size="10"
+    text="电量不足"
+    alpha="180"
+  />
+</Widget>

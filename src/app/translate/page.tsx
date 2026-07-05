@@ -22,12 +22,16 @@ export default function TranslatePage() {
     setResult(null);
 
     try {
+      const parentContext = selectedParent === "mom"
+        ? "说话的人是母亲"
+        : "说话的人是父亲";
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           capability: "translate",
-          messages: [{ role: "user", content: inputText.trim() }],
+          messages: [{ role: "user", content: `${parentContext}：${inputText.trim()}` }],
           stream: false,
         }),
       });
@@ -64,7 +68,7 @@ export default function TranslatePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col">
       <header className="flex items-center px-4 py-3 border-b border-gray-100">
         <button onClick={() => router.back()} className="text-lg mr-3">←</button>
         <h1 className="font-semibold font-song">代际翻译器</h1>

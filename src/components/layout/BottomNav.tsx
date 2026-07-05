@@ -1,52 +1,75 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import Icon, { IconNames } from "@/components/shared/Icon";
 import { useStore } from "@/lib/store";
 
-const childNavItems = [
-  { id: "home", label: "心湖", icon: "🌊", path: "/" },
-  { id: "weather", label: "气象站", icon: "🌤️", path: "/weather" },
-  { id: "capsule", label: "时光", icon: "⏳", path: "/capsule" },
-  { id: "profile", label: "我的", icon: "🌸", path: "/profile" },
-];
-
-const parentNavItems = [
-  { id: "home", label: "首页", icon: "🏠", path: "/" },
-  { id: "bottle", label: "漂流瓶", icon: "🏺", path: "/bottle" },
-  { id: "capsule", label: "时光", icon: "⏳", path: "/capsule" },
-  { id: "profile", label: "我的", icon: "👤", path: "/profile" },
+// 统一导航：首页 / 写一条 / 收件箱 / 我的（父母端孩子端共用）
+const navItems = [
+  { id: "home", label: "首页", icon: IconNames.HOME, path: "/" },
+  { id: "compose", label: "写一条", icon: IconNames.LETTER, path: "/bottle" },
+  { id: "inbox", label: "收件箱", icon: IconNames.RECEIVE, path: "/inbox" },
+  { id: "profile", label: "我的", icon: IconNames.PROFILE, path: "/profile" },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { userType } = useStore();
+  const getTimelineStats = useStore((s) => s.getTimelineStats);
 
-  const navItems = userType === "parent" ? parentNavItems : childNavItems;
+  const stats = getTimelineStats();
 
   return (
-    <nav className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-mobile bg-mibai/95 backdrop-blur-lg border-t border-tianqing/10 px-2 py-2 flex justify-around items-center shadow-[0_-4px_20px_rgba(163,184,198,0.1)] ${userType === 'parent' ? 'h-16' : 'h-14'}`}>
-      {navItems.map((item) => {
-        const isActive = pathname === item.path;
-        return (
-          <button
-            key={item.id}
-            onClick={() => router.push(item.path)}
-            className={`flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-xl transition-all duration-300 ${
-              isActive
-                ? "text-tianqing bg-tianqing/10"
-                : "text-gray-400 hover:text-gray-600"
-            }`}
-          >
-            <span className={`${userType === 'parent' ? 'text-2xl' : 'text-xl'} transition-transform ${isActive ? "scale-110" : ""}`}>
-              {item.icon}
-            </span>
-            <span className={`font-medium ${userType === 'parent' ? 'text-sm' : 'text-[10px]'} ${isActive ? "" : ""}`}>
-              {item.label}
-            </span>
-          </button>
-        );
-      })}
+    <nav className="flex-shrink-0 w-full h-16 border-t border-white/60 bg-mibai/92 px-3 pt-2 backdrop-blur-xl shadow-[0_-10px_30px_rgba(163,184,198,0.16)]">
+      <div className="flex h-full items-center justify-around gap-1">
+        {navItems.map((item) => {
+          const isActive =
+            item.path === "/"
+              ? pathname === "/"
+              : pathname === item.path || pathname.startsWith(item.path + "/");
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => {
+                if (!isActive) {
+                  router.push(item.path);
+                }
+              }}
+              className={`relative flex h-full min-w-[68px] flex-1 max-w-[86px] items-center justify-center rounded-2xl transition-all duration-200 active:scale-95 ${
+                isActive
+                  ? "bg-white text-tianqing shadow-[0_8px_20px_rgba(163,184,198,0.18)]"
+                  : "text-gray-400 hover:bg-white/70 hover:text-gray-600"
+              }`}
+            >
+              {isActive && (
+                <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-gradient-to-r from-transparent via-tianqing to-transparent" />
+              )}
+              <span className="flex flex-col items-center gap-1">
+                <span className="relative">
+                  <Icon
+                    name={item.icon}
+                    size={22}
+                    className={`transition-transform duration-200 ${
+                      isActive ? "scale-110" : ""
+                    }`}
+                  />
+                  {item.id === "inbox" && stats.unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-medium flex items-center justify-center leading-none shadow-sm">
+                      {stats.unreadCount > 9 ? "9+" : stats.unreadCount}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] font-medium leading-none">
+                  {item.label}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }
